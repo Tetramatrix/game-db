@@ -1,0 +1,23 @@
+
+Calculate, how many available keys we have per country
+=======================================================
+
+select country.title, count(gamekey_rs.id) as count from games inner join country on games.countryid = country.id inner join gamekey_rs on gamekey_rs.game_id = games.id where games.published=1 group by country.title;
+
+Calculate, how many games with price higher than 42.33 euros were sold in different countries per rating
+=========================================================================================================
+
+select country.title, count(gamekey_rs.id) as count from games inner join country on games.countryid = country.id inner join gamekey_rs on gamekey_rs.game_id = games.id inner join gamekey on gamekey.id = gamekey_rs.key_id inner join price_rs on price_rs.gamekey_id = gamekey.id inner join price on price.id = price_rs.price_id where games.published = 1 and price.price > "42.22" and gamekey.sold=1 group by country.title;
+
+Find list of top selling games with price higher than the average for country.
+================================================================================
+
+select country.title, games.title, sum(gamekey.sold = 1) as csold, avg, price.price as price from games inner join country on games.countryid = country.id inner join gamekey_rs on gamekey_rs.game_id = games.id inner join gamekey on gamekey.id = gamekey_rs.key_id inner join price_rs on price_rs.gamekey_id = gamekey.id inner join price on price.id = price_rs.price_id inner join (select country.title as tt, avg(price.price) as avg, price.price from games inner join country on games.countryid = country.id inner join gamekey_rs on gamekey_rs.game_id = games.id inner join gamekey on gamekey.id = gamekey_rs.key_id inner join price_rs on price_rs.gamekey_id = gamekey.id inner join price on price.id = price_rs.price_id where gamekey.sold=1 group by country.title) as t On t.tt = country.title where games.published = 1 and gamekey.sold=1 and price.price > avg group by games.title;
+
+
+Find list of games that do not have any more available keys for top selling country
+====================================================================================
+
+select country.title as ot, games.title, sum(gamekey.sold = 1) as csold, sum(gamekey.sold = 0) as cnotsold, avg, price.price as price from games inner join country on games.countryid = country.id inner join gamekey_rs on gamekey_rs.game_id = games.id inner join gamekey on gamekey.id = gamekey_rs.key_id inner join price_rs on price_rs.gamekey_id = gamekey.id inner join price on price.id = price_rs.price_id inner join (
+         select country.title as it, games.title, sum(gamekey.sold = 1) as csold, avg, price.price as price from games inner join country on games.countryid = country.id inner join gamekey_rs on gamekey_rs.game_id = games.id inner join gamekey on gamekey.id = gamekey_rs.key_id inner join price_rs on price_rs.gamekey_id = gamekey.id inner join price on price.id = price_rs.price_id inner join  (select country.title as tt, avg(price.price) as avg, price.price from games inner join country on games.countryid = country.id inner join gamekey_rs on gamekey_rs.game_id = games.id inner join gamekey on gamekey.id = gamekey_rs.key_id inner join price_rs on price_rs.gamekey_id = gamekey.id inner join price on price.id = price_rs.price_id where gamekey.sold=1 group by country.title) as t on t.tt = country.title where games.published = 1 and gamekey.sold=1 and price.price > avg group by games.title
+         ) as ta on ta.it = country.title where games.published = 1 and price.price > avg group by games.title having (sum(gamekey.sold=0)=0);
